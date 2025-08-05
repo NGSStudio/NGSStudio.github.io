@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เปิดตัวซีรีส์ใหม่ - ดูผ่าน Xbox</title>
+  
+  <!-- CSS รวมในไฟล์เดียว -->
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    .container {
+      padding: 40px 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #00e0ff;
+    }
+
+    .description {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: #ddd;
+    }
+
+    button {
+      background-color: #00e0ff;
+      color: #000;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00b5cc;
+    }
+
+    #xboxInfo {
+      margin-top: 30px;
+      text-align: left;
+      background: #1f1f1f;
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    #xboxInfo h2 {
+      color: #00e0ff;
+    }
+
+    #xboxInfo ol {
+      padding-left: 20px;
+    }
+
+    a.xbox-link {
+      display: inline-block;
+      margin-top: 15px;
+      color: #00e0ff;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 เปิดตัวซีรีส์ใหม่: <span id="series-title">"โลกคู่ขนาน"</span></h1>
+    <p class="description">
+      ดำดิ่งสู่เรื่องราวเหนือจินตนาการ กับซีรีส์ใหม่ล่าสุดที่คุณไม่ควรพลาด!
+    </p>
+
+    <button id="watchBtn">🔗 รับชมผ่าน Xbox</button>
+
+    <div id="xboxInfo">
+      <h2>วิธีรับชมผ่าน Xbox</h2>
+      <ol>
+        <li>เปิด Xbox และเข้าสู่ระบบบัญชีของคุณ</li>
+        <li>ไปที่ <strong>Microsoft Store</strong></li>
+        <li>ค้นหาแอป <strong>Netflix</strong> หรือ <strong>Disney+</strong></li>
+        <li>ติดตั้งและเปิดแอป</li>
+        <li>เข้าสู่ระบบด้วยบัญชีของคุณ</li>
+        <li>ค้นหา: <strong>"โลกคู่ขนาน"</strong></li>
+        <li>กดเล่นและเพลิดเพลินกับซีรีส์!</li>
+      </ol>
+      <a class="xbox-link" href="https://www.xbox.com/th-TH" target="_blank">🌐 ไปที่เว็บไซต์ Xbox</a>
+    </div>
+  </div>
+
+  <!-- JavaScript รวมในไฟล์เดียว -->
+  <script>
+    const watchBtn = document.getElementById('watchBtn');
+    const xboxInfo = document.getElementById('xboxInfo');
+
+    watchBtn.addEventListener('click', () => {
+      xboxInfo.style.display = 'block';
+      watchBtn.disabled = true;
+      watchBtn.innerText = "✅ ข้อมูลแสดงแล้ว";
+    });
+  </script>
+</body>
+</html>
