@@ -9,17 +9,15 @@
   #value { font-size: 2em; margin-top: 20px; }
   #circle { width: 200px; height: 200px; border: 5px solid #333; border-radius: 50%;
     margin: 40px auto; transform: rotate(0deg); transition: transform 0.05s linear; }
-  input { padding: 5px; margin: 5px; width: 150px; }
+  input { padding: 5px; margin: 5px; width: 250px; }
   button { padding: 5px 10px; margin: 5px; }
 </style>
 </head>
 <body>
 <h1>Gyroscope Tracker</h1>
 
-<label>Server IP:</label>
-<input type="text" id="serverIp" placeholder="192.168.1.10"><br>
-<label>Port:</label>
-<input type="text" id="serverPort" placeholder="3000"><br>
+<label>Server URL:</label>
+<input type="text" id="serverUrl" placeholder="https://abcd1234.ngrok-free.app/gyro"><br>
 <button onclick="startTracking()">เริ่มส่งค่า</button>
 
 <div id="circle"></div>
@@ -32,7 +30,8 @@ let serverUrl = null;
 let trackingStarted = false;
 
 function sendToServer(rotation) {
-    fetch('https://abcd1234.ngrok-free.app/gyro', {
+    if(!serverUrl) return;
+    fetch(serverUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rotation })
@@ -40,16 +39,17 @@ function sendToServer(rotation) {
 }
 
 function startTracking() {
-    const ip = document.getElementById('serverIp').value;
-    const port = document.getElementById('serverPort').value;
-
-    serverUrl = `http://${ip}/gyro`;
+    serverUrl = document.getElementById('serverUrl').value.trim();
+    if(!serverUrl) {
+        alert('กรุณากรอก URL ของ server');
+        return;
+    }
     trackingStarted = true;
     alert(`เริ่มส่งค่าไป ${serverUrl}`);
 }
 
 window.addEventListener('deviceorientation', (event) => {
-    if(!trackingStarted) return; // ยังไม่เริ่มส่งค่า
+    if(!trackingStarted) return;
     let alpha = event.alpha;
     if (lastAlpha !== null) {
         let delta = alpha - lastAlpha;
