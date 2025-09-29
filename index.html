@@ -1,75 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Gyro Cumulative Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gyro 1800° Tracker</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-  p { font-size: 1.5em; }
-  button { padding: 10px 20px; font-size: 1em; }
+  body { font-family: sans-serif; text-align: center; padding: 50px; }
+  #value { font-size: 2em; margin-top: 20px; }
+  #circle {
+    width: 200px; height: 200px; border: 5px solid #333; border-radius: 50%;
+    margin: 40px auto; transform: rotate(0deg); transition: transform 0.05s linear;
+  }
 </style>
 </head>
 <body>
-<h2>📡 Gyro Cumulative Test ±1800°</h2>
-<button id="startBtn">Start Gyro</button>
-<p>Cumulative Rotation (°): <span id="cumulative">0</span></p>
-<p>vJoy Value (0–32767): <span id="vjoy">0</span></p>
-<p id="status">Waiting...</p>
+<h1>Gyroscope Tracker</h1>
+<div id="circle"></div>
+<div id="value">0°</div>
 
 <script>
-const cumulativeEl = document.getElementById("cumulative");
-const vjoyEl = document.getElementById("vjoy");
-const statusEl = document.getElementById("status");
-const startBtn = document.getElementById("startBtn");
+let lastAlpha = null;
+let totalRotation = 0;
 
-let lastGamma = null;
-let cumulativeGamma = 0;
-
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-startBtn.addEventListener("click", () => {
-    startBtn.style.display = "none";
-    statusEl.innerText = "Gyro started";
-
-    if (isIOS && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-            .then(response => {
-                if (response === 'granted') {
-                    window.addEventListener("deviceorientation", handleOrientation);
-                    statusEl.innerText = "iOS permission granted";
-                } else {
-                    alert("Permission denied for DeviceOrientation");
-                }
-            })
-            .catch(console.error);
-    } else {
-        window.addEventListener("deviceorientation", handleOrientation);
+window.addEventListener('deviceorientation', (event) => {
+    let alpha = event.alpha; // หมุนรอบแกน Z
+    if (lastAlpha !== null) {
+        // คำนวณความต่างแบบ wrap-around
+        let delta = alpha - lastAlpha;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        totalRotation += delta;
+        // จำกัดให้แสดงแค่ ±1800°
+        if(totalRotation > 1800) totalRotation = 1800;
+        if(totalRotation < -1800) totalRotation = -1800;
     }
+    lastAlpha = alpha;
+
+    document.getElementById('value').textContent = totalRotation.toFixed(1) + '°';
+    document.getElementById('circle').style.transform = `rotate(${totalRotation}deg)`;
 });
 
-function handleOrientation(event) {
-    const gamma = event.gamma || 0;
-
-    if(lastGamma !== null){
-        let delta = gamma - lastGamma;
-
-        // แก้ปัญหาข้าม -180°/+180°
-        if(delta > 180) delta -= 360;
-        if(delta < -180) delta += 360;
-
-        cumulativeGamma += delta;
-
-        // Clamp ±1800°
-        cumulativeGamma = Math.max(-1800, Math.min(1800, cumulativeGamma));
-
-        cumulativeEl.innerText = cumulativeGamma.toFixed(1);
-
-        // Map ±1800° → 0–32767 vJoy
-        let vjoyValue = Math.round((cumulativeGamma + 1800)/3600 * 32767);
-        vjoyEl.innerText = vjoyValue;
-    }
-
-    lastGamma = gamma;
+// สำหรับมือถือ iOS 13+ ต้องขอสิทธิ์ก่อน
+if (typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+            if (permissionState === 'granted') {
+                console.log('Permission granted');
+            } else {
+                alert('ต้องอนุญาตให้ใช้ Gyroscope');
+            }
+        })
+        .catch(console.error);
 }
 </script>
 </body>
