@@ -32,8 +32,7 @@ let serverUrl = null;
 let trackingStarted = false;
 
 function sendToServer(rotation) {
-    if(!serverUrl) return;
-    fetch(serverUrl, {
+    fetch('https://abcd1234.ngrok-free.app/gyro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rotation })
@@ -43,10 +42,7 @@ function sendToServer(rotation) {
 function startTracking() {
     const ip = document.getElementById('serverIp').value;
     const port = document.getElementById('serverPort').value;
-    if(!ip || !port) {
-        alert('กรุณากรอก IP และ Port ให้ครบ');
-        return;
-    }
+
     serverUrl = `http://${ip}/gyro`;
     trackingStarted = true;
     alert(`เริ่มส่งค่าไป ${serverUrl}`);
