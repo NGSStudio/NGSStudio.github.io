@@ -47,7 +47,7 @@ function startTracking() {
         alert('กรุณากรอก IP และ Port ให้ครบ');
         return;
     }
-    serverUrl = `http://${ip}:${port}/gyro`;
+    serverUrl = `http://${ip}/gyro`;
     trackingStarted = true;
     alert(`เริ่มส่งค่าไป ${serverUrl}`);
 }
