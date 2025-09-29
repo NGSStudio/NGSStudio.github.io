@@ -2,83 +2,71 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Gyro to vJoy</title>
+<title>Gyro Cumulative Test</title>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-  #value { font-size: 2em; color: #007ACC; }
-  #vjoy { font-size: 2em; color: #FF6600; }
+  p { font-size: 1.5em; }
   button { padding: 10px 20px; font-size: 1em; }
 </style>
 </head>
 <body>
-<h2>📡 Sending Gyro Data to vJoy</h2>
-<p id="status">Waiting for connection...</p>
+<h2>📡 Gyro Cumulative Test ±1800°</h2>
 <button id="startBtn">Start Gyro</button>
-<p>Cumulative Rotation (°): <span id="value">0</span></p>
-<p>vJoy Value: <span id="vjoy">0</span></p>
+<p>Cumulative Rotation (°): <span id="cumulative">0</span></p>
+<p>vJoy Value (0–32767): <span id="vjoy">0</span></p>
+<p id="status">Waiting...</p>
 
 <script>
-const server = "wss://192.168.1.100:8080"; // เปลี่ยนเป็น IP PC
-let ws = new WebSocket(server);
+const cumulativeEl = document.getElementById("cumulative");
+const vjoyEl = document.getElementById("vjoy");
+const statusEl = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
 
 let lastGamma = null;
 let cumulativeGamma = 0;
-
-const valueDisplay = document.getElementById("value");
-const vjoyDisplay = document.getElementById("vjoy");
-const startBtn = document.getElementById("startBtn");
-
-ws.onopen = () => console.log("WebSocket connected");
-ws.onerror = (err) => console.log("WebSocket error", err);
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 startBtn.addEventListener("click", () => {
     startBtn.style.display = "none";
+    statusEl.innerText = "Gyro started";
 
     if (isIOS && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-        .then(response => {
-            if (response === 'granted') {
-                window.addEventListener("deviceorientation", handleOrientation);
-                document.getElementById("status").innerText = "iOS permission granted";
-                console.log("iOS permission granted");
-            } else {
-                alert("Permission denied for DeviceOrientation");
-            }
-        })
-        .catch(console.error);
+            .then(response => {
+                if (response === 'granted') {
+                    window.addEventListener("deviceorientation", handleOrientation);
+                    statusEl.innerText = "iOS permission granted";
+                } else {
+                    alert("Permission denied for DeviceOrientation");
+                }
+            })
+            .catch(console.error);
     } else {
-        // Android / Desktop
         window.addEventListener("deviceorientation", handleOrientation);
-        document.getElementById("status").innerText = "Gyro started (Android/Desktop)";
-        console.log("Gyro started (Android/Desktop)");
     }
 });
 
 function handleOrientation(event) {
     const gamma = event.gamma || 0;
 
-    if (lastGamma !== null) {
+    if(lastGamma !== null){
         let delta = gamma - lastGamma;
-        if (delta > 180) delta -= 360;
-        if (delta < -180) delta += 360;
+
+        // แก้ปัญหาข้าม -180°/+180°
+        if(delta > 180) delta -= 360;
+        if(delta < -180) delta += 360;
 
         cumulativeGamma += delta;
-        if (cumulativeGamma > 1800) cumulativeGamma = 1800;
-        if (cumulativeGamma < -1800) cumulativeGamma = -1800;
 
-        // อัปเดตบนหน้าเว็บ
-        valueDisplay.innerText = cumulativeGamma.toFixed(1);
+        // Clamp ±1800°
+        cumulativeGamma = Math.max(-1800, Math.min(1800, cumulativeGamma));
 
-        // Map ±1800° → 0–32767
+        cumulativeEl.innerText = cumulativeGamma.toFixed(1);
+
+        // Map ±1800° → 0–32767 vJoy
         let vjoyValue = Math.round((cumulativeGamma + 1800)/3600 * 32767);
-        vjoyValue = Math.max(0, Math.min(32767, vjoyValue));
-        vjoyDisplay.innerText = vjoyValue;
-
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(cumulativeGamma.toString());
-        }
+        vjoyEl.innerText = vjoyValue;
     }
 
     lastGamma = gamma;
