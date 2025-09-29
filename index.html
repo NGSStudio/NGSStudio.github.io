@@ -3,34 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gyro 1800° Tracker</title>
+<title>Gyro to vJoy</title>
 <style>
   body { font-family: sans-serif; text-align: center; padding: 50px; }
   #value { font-size: 2em; margin-top: 20px; }
-  #circle {
-    width: 200px; height: 200px; border: 5px solid #333; border-radius: 50%;
-    margin: 40px auto; transform: rotate(0deg); transition: transform 0.05s linear;
-  }
+  #circle { width: 200px; height: 200px; border: 5px solid #333; border-radius: 50%;
+    margin: 40px auto; transform: rotate(0deg); transition: transform 0.05s linear; }
+  input { padding: 5px; margin: 5px; width: 150px; }
+  button { padding: 5px 10px; margin: 5px; }
 </style>
 </head>
 <body>
 <h1>Gyroscope Tracker</h1>
+
+<label>Server IP:</label>
+<input type="text" id="serverIp" placeholder="192.168.1.10"><br>
+<label>Port:</label>
+<input type="text" id="serverPort" placeholder="3000"><br>
+<button onclick="startTracking()">เริ่มส่งค่า</button>
+
 <div id="circle"></div>
 <div id="value">0°</div>
 
 <script>
 let lastAlpha = null;
 let totalRotation = 0;
+let serverUrl = null;
+let trackingStarted = false;
+
+function sendToServer(rotation) {
+    if(!serverUrl) return;
+    fetch(serverUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rotation })
+    }).catch(err => console.error('POST error:', err));
+}
+
+function startTracking() {
+    const ip = document.getElementById('serverIp').value;
+    const port = document.getElementById('serverPort').value;
+    if(!ip || !port) {
+        alert('กรุณากรอก IP และ Port ให้ครบ');
+        return;
+    }
+    serverUrl = `http://${ip}:${port}/gyro`;
+    trackingStarted = true;
+    alert(`เริ่มส่งค่าไป ${serverUrl}`);
+}
 
 window.addEventListener('deviceorientation', (event) => {
-    let alpha = event.alpha; // หมุนรอบแกน Z
+    if(!trackingStarted) return; // ยังไม่เริ่มส่งค่า
+    let alpha = event.alpha;
     if (lastAlpha !== null) {
-        // คำนวณความต่างแบบ wrap-around
         let delta = alpha - lastAlpha;
         if (delta > 180) delta -= 360;
         if (delta < -180) delta += 360;
         totalRotation += delta;
-        // จำกัดให้แสดงแค่ ±1800°
         if(totalRotation > 1800) totalRotation = 1800;
         if(totalRotation < -1800) totalRotation = -1800;
     }
@@ -38,18 +67,16 @@ window.addEventListener('deviceorientation', (event) => {
 
     document.getElementById('value').textContent = totalRotation.toFixed(1) + '°';
     document.getElementById('circle').style.transform = `rotate(${totalRotation}deg)`;
+
+    sendToServer(totalRotation);
 });
 
-// สำหรับมือถือ iOS 13+ ต้องขอสิทธิ์ก่อน
+// iOS 13+ permission
 if (typeof DeviceOrientationEvent !== 'undefined' &&
     typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
         .then(permissionState => {
-            if (permissionState === 'granted') {
-                console.log('Permission granted');
-            } else {
-                alert('ต้องอนุญาตให้ใช้ Gyroscope');
-            }
+            if (permissionState !== 'granted') alert('ต้องอนุญาตให้ใช้ Gyroscope');
         })
         .catch(console.error);
 }
