@@ -7,9 +7,34 @@
 </head>
 <body>
 <h2>Gyroscope API</h2>
+<input type="text" id="serverUrl" placeholder="http://192.168.1.10:3000/data">
+  <br>
+  <button onclick="startTracking()">เริ่มส่งค่า</button>
 <div id="output">Waiting...</div>
 
 <script>
+let serverUrl = "";
+let trackingStarted = false;
+
+function sendToServer(zValue) {
+  if (!serverUrl) return;
+  fetch(serverUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ "rotation": zValue })
+  }).catch(err => console.error('POST error:', err));
+}
+
+function startTracking() {
+  serverUrl = document.getElementById('serverUrl').value.trim();
+  if (!serverUrl) {
+    alert('กรุณากรอก URL ของ server');
+    return;
+  }
+  trackingStarted = true;
+  alert(`เริ่มส่งค่าแกน Z ไปที่ ${serverUrl}`);
+}
+
 if ('Gyroscope' in window) {
   try {
     let gyro = new Gyroscope({ frequency: 60 });
@@ -40,6 +65,9 @@ if ('Gyroscope' in window) {
         y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
         z: ${(angle.z*180/Math.PI).toFixed(1)}°
       `;
+      if (trackingStarted) {
+        sendToServer(z);
+      }
     });
 
     gyro.start();
