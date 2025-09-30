@@ -21,7 +21,7 @@ function sendToServer(zValue) {
   fetch(serverUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ "rotation": zValue })
+    body: JSON.stringify({ rotation: zValue })
   }).catch(err => console.error('POST error:', err));
 }
 
