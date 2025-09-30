@@ -3,308 +3,87 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>Gyro — อ่านทุกด้านและแสดง (Alpha/Beta/Gamma)</title>
+<title>Gyro – อ่านทุกด้าน</title>
 <style>
-  :root{
-    --bg:#fff7ed;
-    --accent:#ff7a18;
-    --muted:#6b6b6b;
-    --card:#fff1e6;
-  }
-  body{
-    margin:0; font-family: Inter, system-ui, Arial;
-    background:linear-gradient(180deg,var(--bg),#fff);
-    color:#222; padding:16px;
-  }
-  header{ display:flex; align-items:center; gap:12px; }
-  h1{ margin:0; font-size:1.1rem; color:var(--accent) }
-  .controls{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
-  button{ background:var(--accent); color:white; border:0; padding:10px 12px; border-radius:10px; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,0.08); }
-  button.secondary{ background:transparent; color:var(--accent); border:2px solid rgba(255,122,24,0.15); }
-  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
-  .card{ background:var(--card); border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(0,0,0,0.04); }
-  .big{ font-weight:700; font-size:1.6rem; color:#333; }
-  .muted{ color:var(--muted); font-size:0.9rem; }
-  .meter{ height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
-  .dial{ width:120px; height:120px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(180deg,#fff,#ffefd9); box-shadow: inset 0 -6px 12px rgba(255,122,24,0.06); font-weight:700; }
-  label{ display:block; font-size:0.85rem; margin-top:8px; }
-  input[type=range]{ width:100%; }
-  footer{ margin-top:14px; color:var(--muted); font-size:0.85rem; }
-  .row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
-  @media(max-width:720px){ .grid{ grid-template-columns:1fr; } }
+  body { font-family: sans-serif; padding: 16px; background: #fff7ed; }
+  h1 { color: #ff7a18; font-size: 1.2rem; }
+  .card { background: #fff1e6; border-radius: 12px; padding: 12px; margin-top: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .big { font-size: 1.5rem; font-weight: bold; }
+  .muted { color: #555; font-size: 0.9rem; }
 </style>
 </head>
 <body>
-<header>
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ff7a18" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="#ff7a18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <div>
-    <h1>Gyro / Orientation — อ่านทุกด้าน</h1>
-    <div class="muted">Alpha (Z yaw), Beta (X pitch), Gamma (Y roll) — แสดงแบบเรียลไทม์และสะสม</div>
-  </div>
-</header>
-
-<div class="controls">
-  <button id="btnRequest">Request Permission</button>
-  <button id="btnPause" class="secondary">Pause</button>
-  <button id="btnCal" class="secondary">Calibrate (ตั้ง 0)</button>
-  <button id="btnReset" class="secondary">Reset Accumulators</button>
-</div>
-
-<div class="grid">
+  <h1>Gyro Orientation</h1>
   <div class="card">
-    <div class="row"><div class="muted">Raw (deg)</div><div class="muted">Smoothed / Accumulated</div></div>
-    <div style="display:flex;gap:12px;margin-top:8px;">
-      <div style="flex:1">
-        <div class="muted">Alpha (Z)</div>
-        <div class="big" id="rawAlpha">—</div>
-        <div class="muted">Δ smoothed: <span id="smAlpha">—</span></div>
-      </div>
-      <div style="flex:1">
-        <div class="muted">Beta (X)</div>
-        <div class="big" id="rawBeta">—</div>
-        <div class="muted">Δ smoothed: <span id="smBeta">—</span></div>
-      </div>
-    </div>
-
-    <hr style="margin:12px 0;border:0;border-top:1px solid rgba(0,0,0,0.06)">
-
-    <div style="display:flex;gap:12px;">
-      <div style="flex:1">
-        <div class="muted">Gamma (Y)</div>
-        <div class="big" id="rawGamma">—</div>
-        <div class="muted">Δ smoothed: <span id="smGamma">—</span></div>
-      </div>
-      <div style="flex:1">
-        <div class="muted">Accumulated angles</div>
-        <div class="big" id="accum">α: — / β: — / γ: —</div>
-        <div class="muted">ใช้ unwrap เพื่อรับค่าต่อเนื่อง</div>
-      </div>
-    </div>
+    <div>Alpha (Z): <span class="big" id="rawAlpha">—</span>°</div>
+    <div>Beta (X): <span class="big" id="rawBeta">—</span>°</div>
+    <div>Gamma (Y): <span class="big" id="rawGamma">—</span>°</div>
+    <div class="muted">Accumulated → <span id="accum">—</span></div>
   </div>
-
-  <div class="card meter">
-    <div class="dial" id="dial">—°</div>
-    <div class="muted">Live visualization (ใช้ alpha)</div>
-    <label>ความลื่น (smoothing): <span id="sval">0.15</span></label>
-    <input id="smooth" type="range" min="0" max="0.95" step="0.01" value="0.15">
-    <label>ความเร็วอัปเดต (ms) : <span id="ival">50</span></label>
-    <input id="interval" type="range" min="16" max="200" step="1" value="50">
-  </div>
-</div>
-
-<footer>
-  ต้องรันบน HTTPS หรือ localhost. บน iOS บางเวอร์ชันต้องกด "Request Permission" แล้วอนุญาต Device Motion.
-</footer>
 
 <script>
 (() => {
-  // state
-  let enabled = false;
-  let paused = false;
   let prev = {alpha:null,beta:null,gamma:null};
   let accum = {alpha:0,beta:0,gamma:0};
-  let calib = {alpha:0,beta:0,gamma:0};
-  let smooth = parseFloat(document.getElementById('smooth').value); // alpha for low-pass (0..0.95)
-  let intervalMs = parseInt(document.getElementById('interval').value);
-  let lastTs = null;
   let smoothed = {alpha:null,beta:null,gamma:null};
+  let smooth = 0.15;
 
-  // UI refs
-  const rawAlpha = document.getElementById('rawAlpha');
-  const rawBeta = document.getElementById('rawBeta');
-  const rawGamma = document.getElementById('rawGamma');
-  const smAlpha = document.getElementById('smAlpha');
-  const smBeta = document.getElementById('smBeta');
-  const smGamma = document.getElementById('smGamma');
-  const accumEl = document.getElementById('accum');
-  const dial = document.getElementById('dial');
-  const btnRequest = document.getElementById('btnRequest');
-  const btnPause = document.getElementById('btnPause');
-  const btnCal = document.getElementById('btnCal');
-  const btnReset = document.getElementById('btnReset');
-  const smoothInput = document.getElementById('smooth');
-  const sVal = document.getElementById('sval');
-  const intervalInput = document.getElementById('interval');
-  const iVal = document.getElementById('ival');
+  const rawAlpha=document.getElementById('rawAlpha');
+  const rawBeta=document.getElementById('rawBeta');
+  const rawGamma=document.getElementById('rawGamma');
+  const accumEl=document.getElementById('accum');
 
-  sVal.textContent = smooth.toFixed(2);
-  iVal.textContent = intervalMs;
-
-  // helpers
-  function clamp360(a){ // normalize to [-180,180)
-    let v = ((a + 180) % 360 + 360) % 360 - 180;
-    return v;
+  function clamp180(v){
+    return ((v + 180) % 360 + 360) % 360 - 180;
   }
-  function unwrapDelta(prevVal, curVal){
-    // both in [-180,180) possibly null
-    if (prevVal === null) return 0;
-    let d = curVal - prevVal;
-    // if jumped across boundary adjust
-    if (d > 180) d -= 360;
-    if (d < -180) d += 360;
+  function unwrapDelta(prev, cur){
+    if(prev===null||cur===null) return 0;
+    let d = cur - prev;
+    if(d>180) d -= 360;
+    if(d<-180) d += 360;
     return d;
   }
-  function lowpass(prev, cur, alpha){
-    if (prev === null) return cur;
-    return prev * (1 - alpha) + cur * alpha;
+  function lowpass(prev,cur,a){
+    if(prev===null) return cur;
+    return prev*(1-a)+cur*a;
+  }
+  // 🔧 Fix ติด 90°
+  function fixFlip(beta,gamma){
+    if(gamma>90){ gamma=180-gamma; beta=beta>0?180-beta:-180-beta; }
+    if(gamma<-90){ gamma=-180-gamma; beta=beta>0?180-beta:-180-beta; }
+    return {beta,gamma};
   }
 
-  // DeviceOrientation handler
   function handleOri(e){
-    // Some browsers provide null when not supported
-    if (!e) return;
-    // alpha: z (0..360) or null; beta: -180..180; gamma: -90..90
-    let rawAlphaVal = (e.alpha === null) ? null : clamp360(e.alpha);
-    let rawBetaVal = (e.beta === null) ? null : clamp360(e.beta);
-    let rawGammaVal = (e.gamma === null) ? null : clamp360(e.gamma);
+    let alpha = e.alpha!==null?clamp180(e.alpha):null;
+    let beta  = e.beta!==null?clamp180(e.beta):null;
+    let gamma = e.gamma!==null?clamp180(e.gamma):null;
 
-    const now = performance.now();
-    const dt = lastTs ? (now - lastTs) / 1000 : 0;
-    lastTs = now;
-
-    // apply calibration offset (user can set current pose as 0)
-    if (rawAlphaVal !== null) rawAlphaVal -= calib.alpha;
-    if (rawBetaVal !== null) rawBetaVal -= calib.beta;
-    if (rawGammaVal !== null) rawGammaVal -= calib.gamma;
-
-    // smoothing
-    smoothed.alpha = lowpass(smoothed.alpha, rawAlphaVal, smooth);
-    smoothed.beta = lowpass(smoothed.beta, rawBetaVal, smooth);
-    smoothed.gamma = lowpass(smoothed.gamma, rawGammaVal, smooth);
-
-    // compute delta via unwrap (handles wrap-around)
-    let dAlpha = rawAlphaVal === null || prev.alpha === null ? 0 : unwrapDelta(prev.alpha, rawAlphaVal);
-    let dBeta  = rawBetaVal  === null || prev.beta  === null ? 0 : unwrapDelta(prev.beta, rawBetaVal);
-    let dGamma = rawGammaVal === null || prev.gamma === null ? 0 : unwrapDelta(prev.gamma, rawGammaVal);
-
-    // accumulate deltas -> continuous rotation
-    accum.alpha += dAlpha;
-    accum.beta  += dBeta;
-    accum.gamma += dGamma;
-
-    // update prev values to current raw (not smoothed), to track wrapping correctly
-    prev.alpha = rawAlphaVal;
-    prev.beta  = rawBetaVal;
-    prev.gamma = rawGammaVal;
-
-    // update UI
-    rawAlpha.textContent = rawAlphaVal === null ? '—' : rawAlphaVal.toFixed(1) + '°';
-    rawBeta.textContent  = rawBetaVal  === null ? '—' : rawBetaVal.toFixed(1) + '°';
-    rawGamma.textContent = rawGammaVal === null ? '—' : rawGammaVal.toFixed(1) + '°';
-
-    smAlpha.textContent = smoothed.alpha === null ? '—' : smoothed.alpha.toFixed(1) + '°';
-    smBeta.textContent  = smoothed.beta  === null ? '—' : smoothed.beta.toFixed(1) + '°';
-    smGamma.textContent = smoothed.gamma === null ? '—' : smoothed.gamma.toFixed(1) + '°';
-
-    accumEl.textContent = `α: ${accum.alpha.toFixed(1)}° / β: ${accum.beta.toFixed(1)}° / γ: ${accum.gamma.toFixed(1)}°`;
-
-    // simple dial visualize alpha accumulated
-    let show = smoothed.alpha !== null ? smoothed.alpha : (rawAlphaVal !== null ? rawAlphaVal : 0);
-    dial.style.transform = `rotate(${show}deg)`;
-    dial.textContent = (accum.alpha).toFixed(0) + '°';
-  }
-
-  // throttled listener to respect intervalMs when paused/unpaused
-  let throttledListener = null;
-  function installListener(){
-    if (throttledListener) window.removeEventListener('deviceorientation', throttledListener);
-    let lastCall = 0;
-    throttledListener = function(e){
-      if (paused) return;
-      let now = performance.now();
-      if (now - lastCall >= intervalMs){
-        lastCall = now;
-        handleOri(e);
-      }
-    };
-    window.addEventListener('deviceorientation', throttledListener, true);
-  }
-
-  // UI actions
-  btnRequest.addEventListener('click', async () => {
-    // For iOS 13+ permission
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      try {
-        const res = await DeviceMotionEvent.requestPermission();
-        // note: some browsers put permission here, some in DeviceOrientationEvent
-        if (res === 'granted') {
-          enabled = true;
-          btnRequest.textContent = 'Permission granted';
-          installListener();
-        } else {
-          btnRequest.textContent = 'Permission denied';
-        }
-      } catch (err) {
-        console.warn('Permission request failed', err);
-        btnRequest.textContent = 'Permission error';
-      }
-    } else if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      try {
-        const res = await DeviceOrientationEvent.requestPermission();
-        if (res === 'granted') {
-          enabled = true;
-          btnRequest.textContent = 'Permission granted';
-          installListener();
-        } else {
-          btnRequest.textContent = 'Permission denied';
-        }
-      } catch (err) {
-        console.warn('Permission request failed', err);
-        btnRequest.textContent = 'Permission error';
-      }
-    } else {
-      // desktop or browser that doesn't require explicit permission
-      enabled = true;
-      btnRequest.textContent = 'Listening';
-      installListener();
+    if(beta!==null&&gamma!==null){
+      const fixed=fixFlip(beta,gamma);
+      beta=fixed.beta; gamma=fixed.gamma;
     }
-  });
 
-  btnPause.addEventListener('click', () => {
-    paused = !paused;
-    btnPause.textContent = paused ? 'Resume' : 'Pause';
-  });
-  btnCal.addEventListener('click', () => {
-    // set current smoothed/raw as zero reference
-    calib.alpha = (smoothed.alpha !== null) ? smoothed.alpha : (prev.alpha !== null ? prev.alpha : 0);
-    calib.beta  = (smoothed.beta  !== null) ? smoothed.beta  : (prev.beta  !== null ? prev.beta  : 0);
-    calib.gamma = (smoothed.gamma !== null) ? smoothed.gamma : (prev.gamma !== null ? prev.gamma : 0);
-    // also reset accum to zero (optional) — keeping accum but subtract current pose so present pose becomes 0 visually
-    accum.alpha -= 0; // leave accum but calibration affects displayed raw values
-    btnCal.textContent = 'Calibrated';
-    setTimeout(()=> btnCal.textContent = 'Calibrate (ตั้ง 0)', 1200);
-  });
-  btnReset.addEventListener('click', () => {
-    accum.alpha = accum.beta = accum.gamma = 0;
-    prev.alpha = prev.beta = prev.gamma = null;
-    smoothed.alpha = smoothed.beta = smoothed.gamma = null;
-    accumEl.textContent = `α: ${accum.alpha.toFixed(1)}° / β: ${accum.beta.toFixed(1)}° / γ: ${accum.gamma.toFixed(1)}°`;
-  });
+    let dA=unwrapDelta(prev.alpha,alpha);
+    let dB=unwrapDelta(prev.beta ,beta );
+    let dG=unwrapDelta(prev.gamma,gamma);
 
-  smoothInput.addEventListener('input', (e) => {
-    smooth = parseFloat(e.target.value);
-    sVal.textContent = smooth.toFixed(2);
-  });
-  intervalInput.addEventListener('input', (e) => {
-    intervalMs = parseInt(e.target.value);
-    iVal.textContent = intervalMs;
-    installListener();
-  });
+    accum.alpha+=dA; accum.beta+=dB; accum.gamma+=dG;
 
-  // auto-install if permission not required (desktop simulator)
-  if (typeof DeviceMotionEvent === 'undefined' && typeof DeviceOrientationEvent !== 'undefined') {
-    installListener();
+    smoothed.alpha=lowpass(smoothed.alpha,alpha,smooth);
+    smoothed.beta =lowpass(smoothed.beta ,beta ,smooth);
+    smoothed.gamma=lowpass(smoothed.gamma,gamma,smooth);
+
+    prev.alpha=alpha; prev.beta=beta; prev.gamma=gamma;
+
+    rawAlpha.textContent=alpha?.toFixed(1)??'—';
+    rawBeta.textContent =beta?.toFixed(1)??'—';
+    rawGamma.textContent=gamma?.toFixed(1)??'—';
+    accumEl.textContent=`α:${accum.alpha.toFixed(1)}° β:${accum.beta.toFixed(1)}° γ:${accum.gamma.toFixed(1)}°`;
   }
 
-  // show warning if not secure
-  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-    console.warn('Device orientation works best over HTTPS or localhost.');
-  }
-
-  // expose for debugging (optional)
-  window.__gyro = {
-    state: () => ({enabled, paused, smooth, intervalMs, accum, prev, smoothed, calib})
-  };
+  window.addEventListener('deviceorientation',handleOri);
 })();
 </script>
 </body>
