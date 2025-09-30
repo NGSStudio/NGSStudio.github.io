@@ -1,423 +1,311 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gyroscope Roll Tracker (Stable)</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .container {
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-        
-        h1 {
-            margin-bottom: 20px;
-            font-size: 2.2rem;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-        
-        .status {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-            font-size: 1.1rem;
-        }
-        
-        .roll-display {
-            background-color: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .roll-value {
-            font-size: 3.5rem;
-            font-weight: bold;
-            margin: 10px 0;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-        
-        .roll-label {
-            font-size: 1.2rem;
-            opacity: 0.8;
-        }
-        
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        
-        button {
-            background: linear-gradient(to right, #3498db, #2980b9);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 25px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex: 1;
-            margin: 0 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-        
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        button:active {
-            transform: translateY(1px);
-        }
-        
-        #resetBtn {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
-        }
-        
-        .instructions {
-            margin-top: 25px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            line-height: 1.5;
-        }
-        
-        .gyro-indicator {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 20px auto;
-            position: relative;
-            overflow: hidden;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .gyro-needle {
-            position: absolute;
-            width: 4px;
-            height: 70px;
-            background-color: #ff5252;
-            top: 10px;
-            left: 50%;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(0deg);
-            transition: transform 0.1s ease;
-            box-shadow: 0 0 10px #ff5252;
-        }
-        
-        .gyro-center {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: white;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .gyro-markings {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .marking {
-            position: absolute;
-            width: 2px;
-            height: 10px;
-            background-color: rgba(255, 255, 255, 0.5);
-            left: 50%;
-            transform-origin: bottom center;
-            transform: translateX(-50%);
-        }
-        
-        .settings {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-        }
-        
-        .setting-item {
-            margin: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .setting-label {
-            font-size: 0.9rem;
-        }
-        
-        .setting-value {
-            font-weight: bold;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            margin: 5px 0;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse {
-            animation: pulse 1s infinite;
-        }
-        
-        @media (max-width: 500px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 1.8rem;
-            }
-            
-            .roll-value {
-                font-size: 2.8rem;
-            }
-            
-            .controls {
-                flex-direction: column;
-            }
-            
-            button {
-                margin: 5px 0;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Gyro — อ่านทุกด้านและแสดง (Alpha/Beta/Gamma)</title>
+<style>
+  :root{
+    --bg:#fff7ed;
+    --accent:#ff7a18;
+    --muted:#6b6b6b;
+    --card:#fff1e6;
+  }
+  body{
+    margin:0; font-family: Inter, system-ui, Arial;
+    background:linear-gradient(180deg,var(--bg),#fff);
+    color:#222; padding:16px;
+  }
+  header{ display:flex; align-items:center; gap:12px; }
+  h1{ margin:0; font-size:1.1rem; color:var(--accent) }
+  .controls{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  button{ background:var(--accent); color:white; border:0; padding:10px 12px; border-radius:10px; cursor:pointer; box-shadow:0 6px 14px rgba(0,0,0,0.08); }
+  button.secondary{ background:transparent; color:var(--accent); border:2px solid rgba(255,122,24,0.15); }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .card{ background:var(--card); border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(0,0,0,0.04); }
+  .big{ font-weight:700; font-size:1.6rem; color:#333; }
+  .muted{ color:var(--muted); font-size:0.9rem; }
+  .meter{ height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+  .dial{ width:120px; height:120px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(180deg,#fff,#ffefd9); box-shadow: inset 0 -6px 12px rgba(255,122,24,0.06); font-weight:700; }
+  label{ display:block; font-size:0.85rem; margin-top:8px; }
+  input[type=range]{ width:100%; }
+  footer{ margin-top:14px; color:var(--muted); font-size:0.85rem; }
+  .row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  @media(max-width:720px){ .grid{ grid-template-columns:1fr; } }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Gyroscope Roll Tracker (Stable)</h1>
-        
-        <div class="status" id="status">
-            กำลังรอการอนุญาตใช้งาน Gyroscope...
-        </div>
-        
-        <div class="gyro-indicator">
-            <div class="gyro-markings" id="markings"></div>
-            <div class="gyro-needle" id="needle"></div>
-            <div class="gyro-center"></div>
-        </div>
-        
-        <div class="roll-display">
-            <div class="roll-label">ค่าสะสม Roll</div>
-            <div class="roll-value" id="rollValue">0.00°</div>
-            <div class="roll-label" id="currentRoll">ค่าปัจจุบัน: 0.00°</div>
-        </div>
-        
-        <div class="settings">
-            <div class="setting-item">
-                <div class="setting-label">ความไว (Sensitivity)</div>
-                <div class="setting-value" id="sensitivityValue">0.5</div>
-            </div>
-            <input type="range" id="sensitivity" min="0.1" max="1" step="0.1" value="0.5">
-            
-            <div class="setting-item">
-                <div class="setting-label">เกณฑ์การตรวจจับ (Threshold)</div>
-                <div class="setting-value" id="thresholdValue">2.0°</div>
-            </div>
-            <input type="range" id="threshold" min="0.5" max="5" step="0.5" value="2.0">
-        </div>
-        
-        <div class="controls">
-            <button id="startBtn">เริ่มการวัด</button>
-            <button id="resetBtn">รีเซ็ตค่า</button>
-        </div>
-        
-        <div class="instructions">
-            <p>กดปุ่ม "เริ่มการวัด" เพื่ออนุญาตให้เว็บไซต์เข้าถึง Gyroscope ของอุปกรณ์ของคุณ</p>
-            <p>ปรับความไวและเกณฑ์การตรวจจับเพื่อลดการแกว่งของค่า</p>
-            <p>หมุนอุปกรณ์เพื่อดูการเปลี่ยนแปลงของค่า Roll และค่าสะสม</p>
-        </div>
+<header>
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ff7a18" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="#ff7a18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div>
+    <h1>Gyro / Orientation — อ่านทุกด้าน</h1>
+    <div class="muted">Alpha (Z yaw), Beta (X pitch), Gamma (Y roll) — แสดงแบบเรียลไทม์และสะสม</div>
+  </div>
+</header>
+
+<div class="controls">
+  <button id="btnRequest">Request Permission</button>
+  <button id="btnPause" class="secondary">Pause</button>
+  <button id="btnCal" class="secondary">Calibrate (ตั้ง 0)</button>
+  <button id="btnReset" class="secondary">Reset Accumulators</button>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="row"><div class="muted">Raw (deg)</div><div class="muted">Smoothed / Accumulated</div></div>
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <div style="flex:1">
+        <div class="muted">Alpha (Z)</div>
+        <div class="big" id="rawAlpha">—</div>
+        <div class="muted">Δ smoothed: <span id="smAlpha">—</span></div>
+      </div>
+      <div style="flex:1">
+        <div class="muted">Beta (X)</div>
+        <div class="big" id="rawBeta">—</div>
+        <div class="muted">Δ smoothed: <span id="smBeta">—</span></div>
+      </div>
     </div>
 
-    <script>
-        // ตัวแปรเก็บค่า
-        let totalRoll = 0;
-        let isGyroActive = false;
-        let sensor = null;
-        let lastRoll = 0;
-        let sensitivity = 0.5;
-        let threshold = 2.0;
-        
-        // อ้างอิง DOM elements
-        const statusElement = document.getElementById('status');
-        const rollValueElement = document.getElementById('rollValue');
-        const currentRollElement = document.getElementById('currentRoll');
-        const startBtn = document.getElementById('startBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const needleElement = document.getElementById('needle');
-        const markingsElement = document.getElementById('markings');
-        const sensitivitySlider = document.getElementById('sensitivity');
-        const sensitivityValue = document.getElementById('sensitivityValue');
-        const thresholdSlider = document.getElementById('threshold');
-        const thresholdValue = document.getElementById('thresholdValue');
-        
-        // สร้างเครื่องหมายบนหน้าปัด
-        function createMarkings() {
-            for (let i = 0; i < 36; i++) {
-                const marking = document.createElement('div');
-                marking.className = 'marking';
-                marking.style.transform = `translateX(-50%) rotate(${i * 10}deg)`;
-                markingsElement.appendChild(marking);
-            }
+    <hr style="margin:12px 0;border:0;border-top:1px solid rgba(0,0,0,0.06)">
+
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1">
+        <div class="muted">Gamma (Y)</div>
+        <div class="big" id="rawGamma">—</div>
+        <div class="muted">Δ smoothed: <span id="smGamma">—</span></div>
+      </div>
+      <div style="flex:1">
+        <div class="muted">Accumulated angles</div>
+        <div class="big" id="accum">α: — / β: — / γ: —</div>
+        <div class="muted">ใช้ unwrap เพื่อรับค่าต่อเนื่อง</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card meter">
+    <div class="dial" id="dial">—°</div>
+    <div class="muted">Live visualization (ใช้ alpha)</div>
+    <label>ความลื่น (smoothing): <span id="sval">0.15</span></label>
+    <input id="smooth" type="range" min="0" max="0.95" step="0.01" value="0.15">
+    <label>ความเร็วอัปเดต (ms) : <span id="ival">50</span></label>
+    <input id="interval" type="range" min="16" max="200" step="1" value="50">
+  </div>
+</div>
+
+<footer>
+  ต้องรันบน HTTPS หรือ localhost. บน iOS บางเวอร์ชันต้องกด "Request Permission" แล้วอนุญาต Device Motion.
+</footer>
+
+<script>
+(() => {
+  // state
+  let enabled = false;
+  let paused = false;
+  let prev = {alpha:null,beta:null,gamma:null};
+  let accum = {alpha:0,beta:0,gamma:0};
+  let calib = {alpha:0,beta:0,gamma:0};
+  let smooth = parseFloat(document.getElementById('smooth').value); // alpha for low-pass (0..0.95)
+  let intervalMs = parseInt(document.getElementById('interval').value);
+  let lastTs = null;
+  let smoothed = {alpha:null,beta:null,gamma:null};
+
+  // UI refs
+  const rawAlpha = document.getElementById('rawAlpha');
+  const rawBeta = document.getElementById('rawBeta');
+  const rawGamma = document.getElementById('rawGamma');
+  const smAlpha = document.getElementById('smAlpha');
+  const smBeta = document.getElementById('smBeta');
+  const smGamma = document.getElementById('smGamma');
+  const accumEl = document.getElementById('accum');
+  const dial = document.getElementById('dial');
+  const btnRequest = document.getElementById('btnRequest');
+  const btnPause = document.getElementById('btnPause');
+  const btnCal = document.getElementById('btnCal');
+  const btnReset = document.getElementById('btnReset');
+  const smoothInput = document.getElementById('smooth');
+  const sVal = document.getElementById('sval');
+  const intervalInput = document.getElementById('interval');
+  const iVal = document.getElementById('ival');
+
+  sVal.textContent = smooth.toFixed(2);
+  iVal.textContent = intervalMs;
+
+  // helpers
+  function clamp360(a){ // normalize to [-180,180)
+    let v = ((a + 180) % 360 + 360) % 360 - 180;
+    return v;
+  }
+  function unwrapDelta(prevVal, curVal){
+    // both in [-180,180) possibly null
+    if (prevVal === null) return 0;
+    let d = curVal - prevVal;
+    // if jumped across boundary adjust
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    return d;
+  }
+  function lowpass(prev, cur, alpha){
+    if (prev === null) return cur;
+    return prev * (1 - alpha) + cur * alpha;
+  }
+
+  // DeviceOrientation handler
+  function handleOri(e){
+    // Some browsers provide null when not supported
+    if (!e) return;
+    // alpha: z (0..360) or null; beta: -180..180; gamma: -90..90
+    let rawAlphaVal = (e.alpha === null) ? null : clamp360(e.alpha);
+    let rawBetaVal = (e.beta === null) ? null : clamp360(e.beta);
+    let rawGammaVal = (e.gamma === null) ? null : clamp360(e.gamma);
+
+    const now = performance.now();
+    const dt = lastTs ? (now - lastTs) / 1000 : 0;
+    lastTs = now;
+
+    // apply calibration offset (user can set current pose as 0)
+    if (rawAlphaVal !== null) rawAlphaVal -= calib.alpha;
+    if (rawBetaVal !== null) rawBetaVal -= calib.beta;
+    if (rawGammaVal !== null) rawGammaVal -= calib.gamma;
+
+    // smoothing
+    smoothed.alpha = lowpass(smoothed.alpha, rawAlphaVal, smooth);
+    smoothed.beta = lowpass(smoothed.beta, rawBetaVal, smooth);
+    smoothed.gamma = lowpass(smoothed.gamma, rawGammaVal, smooth);
+
+    // compute delta via unwrap (handles wrap-around)
+    let dAlpha = rawAlphaVal === null || prev.alpha === null ? 0 : unwrapDelta(prev.alpha, rawAlphaVal);
+    let dBeta  = rawBetaVal  === null || prev.beta  === null ? 0 : unwrapDelta(prev.beta, rawBetaVal);
+    let dGamma = rawGammaVal === null || prev.gamma === null ? 0 : unwrapDelta(prev.gamma, rawGammaVal);
+
+    // accumulate deltas -> continuous rotation
+    accum.alpha += dAlpha;
+    accum.beta  += dBeta;
+    accum.gamma += dGamma;
+
+    // update prev values to current raw (not smoothed), to track wrapping correctly
+    prev.alpha = rawAlphaVal;
+    prev.beta  = rawBetaVal;
+    prev.gamma = rawGammaVal;
+
+    // update UI
+    rawAlpha.textContent = rawAlphaVal === null ? '—' : rawAlphaVal.toFixed(1) + '°';
+    rawBeta.textContent  = rawBetaVal  === null ? '—' : rawBetaVal.toFixed(1) + '°';
+    rawGamma.textContent = rawGammaVal === null ? '—' : rawGammaVal.toFixed(1) + '°';
+
+    smAlpha.textContent = smoothed.alpha === null ? '—' : smoothed.alpha.toFixed(1) + '°';
+    smBeta.textContent  = smoothed.beta  === null ? '—' : smoothed.beta.toFixed(1) + '°';
+    smGamma.textContent = smoothed.gamma === null ? '—' : smoothed.gamma.toFixed(1) + '°';
+
+    accumEl.textContent = `α: ${accum.alpha.toFixed(1)}° / β: ${accum.beta.toFixed(1)}° / γ: ${accum.gamma.toFixed(1)}°`;
+
+    // simple dial visualize alpha accumulated
+    let show = smoothed.alpha !== null ? smoothed.alpha : (rawAlphaVal !== null ? rawAlphaVal : 0);
+    dial.style.transform = `rotate(${show}deg)`;
+    dial.textContent = (accum.alpha).toFixed(0) + '°';
+  }
+
+  // throttled listener to respect intervalMs when paused/unpaused
+  let throttledListener = null;
+  function installListener(){
+    if (throttledListener) window.removeEventListener('deviceorientation', throttledListener);
+    let lastCall = 0;
+    throttledListener = function(e){
+      if (paused) return;
+      let now = performance.now();
+      if (now - lastCall >= intervalMs){
+        lastCall = now;
+        handleOri(e);
+      }
+    };
+    window.addEventListener('deviceorientation', throttledListener, true);
+  }
+
+  // UI actions
+  btnRequest.addEventListener('click', async () => {
+    // For iOS 13+ permission
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const res = await DeviceMotionEvent.requestPermission();
+        // note: some browsers put permission here, some in DeviceOrientationEvent
+        if (res === 'granted') {
+          enabled = true;
+          btnRequest.textContent = 'Permission granted';
+          installListener();
+        } else {
+          btnRequest.textContent = 'Permission denied';
         }
-        
-        // กรองค่าเพื่อลดการแกว่ง
-        function filterValue(currentValue, previousValue, sensitivity) {
-            return previousValue + (currentValue - previousValue) * sensitivity;
+      } catch (err) {
+        console.warn('Permission request failed', err);
+        btnRequest.textContent = 'Permission error';
+      }
+    } else if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === 'granted') {
+          enabled = true;
+          btnRequest.textContent = 'Permission granted';
+          installListener();
+        } else {
+          btnRequest.textContent = 'Permission denied';
         }
-        
-        // ตรวจจับการหมุนที่แท้จริง
-        function detectRealRotation(currentRoll, lastRoll, threshold) {
-            const delta = Math.abs(currentRoll - lastRoll);
-            return delta > threshold;
-        }
-        
-        // เริ่มต้นใช้งาน Gyroscope
-        function startGyro() {
-            if (typeof Gyroscope === "undefined") {
-                statusElement.textContent = "อุปกรณ์ของคุณไม่รองรับ Gyroscope API";
-                return;
-            }
-            
-            try {
-                sensor = new Gyroscope({ frequency: 60 });
-                
-                sensor.addEventListener('reading', () => {
-                    // คำนวณมุมจากค่า x, y, z
-                    const x = sensor.x;
-                    const y = sensor.y;
-                    const z = sensor.z;
-                    
-                    // คำนวณมุม Roll จากค่า accelerometer
-                    let roll = Math.atan2(y, z) * (180 / Math.PI);
-                    
-                    // กรองค่าเพื่อลดการแกว่ง
-                    roll = filterValue(roll, lastRoll, sensitivity);
-                    
-                    // ตรวจจับการหมุนที่แท้จริง
-                    if (detectRealRotation(roll, lastRoll, threshold)) {
-                        // อัพเดทค่าสะสมเฉพาะเมื่อมีการหมุนจริง
-                        totalRoll += Math.abs(roll - lastRoll);
-                    }
-                    
-                    lastRoll = roll;
-                    
-                    // แสดงผล
-                    rollValueElement.textContent = totalRoll.toFixed(2) + '°';
-                    currentRollElement.textContent = `ค่าปัจจุบัน: ${roll.toFixed(2)}°`;
-                    
-                    // อัพเดทเข็มบนหน้าปัด
-                    needleElement.style.transform = `translateX(-50%) rotate(${roll}deg)`;
-                    
-                    statusElement.textContent = "กำลังวัดค่า Gyroscope...";
-                    statusElement.classList.add('pulse');
-                });
-                
-                sensor.addEventListener('error', event => {
-                    statusElement.textContent = "เกิดข้อผิดพลาด: " + event.error.message;
-                    statusElement.classList.remove('pulse');
-                });
-                
-                sensor.start();
-                isGyroActive = true;
-                startBtn.textContent = "หยุดการวัด";
-                statusElement.textContent = "กำลังวัดค่า Gyroscope...";
-                
-            } catch (error) {
-                statusElement.textContent = "ไม่สามารถเริ่มต้น Gyroscope ได้: " + error.message;
-            }
-        }
-        
-        // หยุดการวัด
-        function stopGyro() {
-            if (sensor) {
-                sensor.stop();
-                isGyroActive = false;
-                startBtn.textContent = "เริ่มการวัด";
-                statusElement.textContent = "หยุดการวัดแล้ว";
-                statusElement.classList.remove('pulse');
-            }
-        }
-        
-        // รีเซ็ตค่า
-        function resetValues() {
-            totalRoll = 0;
-            lastRoll = 0;
-            rollValueElement.textContent = "0.00°";
-            currentRollElement.textContent = "ค่าปัจจุบัน: 0.00°";
-            needleElement.style.transform = 'translateX(-50%) rotate(0deg)';
-        }
-        
-        // อัพเดทค่าความไว
-        function updateSensitivity() {
-            sensitivity = parseFloat(sensitivitySlider.value);
-            sensitivityValue.textContent = sensitivity;
-        }
-        
-        // อัพเดทค่าเกณฑ์
-        function updateThreshold() {
-            threshold = parseFloat(thresholdSlider.value);
-            thresholdValue.textContent = threshold + '°';
-        }
-        
-        // เพิ่ม Event Listeners
-        startBtn.addEventListener('click', () => {
-            if (isGyroActive) {
-                stopGyro();
-            } else {
-                startGyro();
-            }
-        });
-        
-        resetBtn.addEventListener('click', resetValues);
-        sensitivitySlider.addEventListener('input', updateSensitivity);
-        thresholdSlider.addEventListener('input', updateThreshold);
-        
-        // เริ่มต้นสร้างเครื่องหมายบนหน้าปัด
-        createMarkings();
-        
-        // ตรวจสอบการรองรับ Gyroscope
-        if (typeof Gyroscope === "undefined") {
-            statusElement.textContent = "เบราว์เซอร์นี้ไม่รองรับ Gyroscope API";
-            startBtn.disabled = true;
-        }
-    </script>
+      } catch (err) {
+        console.warn('Permission request failed', err);
+        btnRequest.textContent = 'Permission error';
+      }
+    } else {
+      // desktop or browser that doesn't require explicit permission
+      enabled = true;
+      btnRequest.textContent = 'Listening';
+      installListener();
+    }
+  });
+
+  btnPause.addEventListener('click', () => {
+    paused = !paused;
+    btnPause.textContent = paused ? 'Resume' : 'Pause';
+  });
+  btnCal.addEventListener('click', () => {
+    // set current smoothed/raw as zero reference
+    calib.alpha = (smoothed.alpha !== null) ? smoothed.alpha : (prev.alpha !== null ? prev.alpha : 0);
+    calib.beta  = (smoothed.beta  !== null) ? smoothed.beta  : (prev.beta  !== null ? prev.beta  : 0);
+    calib.gamma = (smoothed.gamma !== null) ? smoothed.gamma : (prev.gamma !== null ? prev.gamma : 0);
+    // also reset accum to zero (optional) — keeping accum but subtract current pose so present pose becomes 0 visually
+    accum.alpha -= 0; // leave accum but calibration affects displayed raw values
+    btnCal.textContent = 'Calibrated';
+    setTimeout(()=> btnCal.textContent = 'Calibrate (ตั้ง 0)', 1200);
+  });
+  btnReset.addEventListener('click', () => {
+    accum.alpha = accum.beta = accum.gamma = 0;
+    prev.alpha = prev.beta = prev.gamma = null;
+    smoothed.alpha = smoothed.beta = smoothed.gamma = null;
+    accumEl.textContent = `α: ${accum.alpha.toFixed(1)}° / β: ${accum.beta.toFixed(1)}° / γ: ${accum.gamma.toFixed(1)}°`;
+  });
+
+  smoothInput.addEventListener('input', (e) => {
+    smooth = parseFloat(e.target.value);
+    sVal.textContent = smooth.toFixed(2);
+  });
+  intervalInput.addEventListener('input', (e) => {
+    intervalMs = parseInt(e.target.value);
+    iVal.textContent = intervalMs;
+    installListener();
+  });
+
+  // auto-install if permission not required (desktop simulator)
+  if (typeof DeviceMotionEvent === 'undefined' && typeof DeviceOrientationEvent !== 'undefined') {
+    installListener();
+  }
+
+  // show warning if not secure
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    console.warn('Device orientation works best over HTTPS or localhost.');
+  }
+
+  // expose for debugging (optional)
+  window.__gyro = {
+    state: () => ({enabled, paused, smooth, intervalMs, accum, prev, smoothed, calib})
+  };
+})();
+</script>
 </body>
 </html>
