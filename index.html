@@ -1,176 +1,26 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gyro Tracker - Theme Orange</title>
-<style>
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg,#FF9A3C,#FF5722);
-    color: #fff;
-    text-align: center;
-    padding: 50px 20px;
-    min-height: 100vh;
-    margin: 0;
-  }
-
-  h1 {
-    font-size: 2.2em;
-    margin-bottom: 20px;
-    color: #fff;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-  }
-
-  .container {
-    max-width: 400px;
-    margin: auto;
-    background: rgba(255,255,255,0.15);
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    backdrop-filter: blur(5px);
-  }
-
-  #circle-container {
-    position: relative;
-    width: 250px;
-    height: 250px;
-    margin: 30px auto;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  }
-
-  #circle {
-    width: 180px;
-    height: 180px;
-    border: 6px solid #FFB74D;
-    border-radius: 50%;
-    transition: transform 0.05s linear;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-    background: rgba(255,255,255,0.1);
-  }
-
-  #value {
-    font-size: 2em;
-    margin-top: 15px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  }
-
-  input {
-    padding: 10px;
-    margin: 10px 0;
-    width: 280px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    font-size: 1em;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  }
-
-  button {
-    padding: 10px 20px;
-    margin: 10px 5px;
-    border: none;
-    border-radius: 8px;
-    background-color: #FF9800;
-    color: #fff;
-    font-size: 1em;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: background 0.3s;
-  }
-
-  button:hover {
-    background-color: #FB8C00;
-  }
-
-</style>
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+	<meta charset="utf-8" /> 
+	<title>gyro.js - easy access to your web browsers built in accelerometer's and gyroscope's</title>
 </head>
 <body>
-<div class="container">
-  <h1>Gyroscope Tracker</h1>
-
-  <label style="color:#fff;">Server URL:</label><br>
-  <input type="text" id="serverUrl" placeholder="https://abcd1234.ngrok-free.app/gyro"><br>
-  <button onclick="startTracking()">เริ่มส่งค่า</button>
-
-  <div id="circle-container">
-    <div id="circle"></div>
-  </div>
-  <div id="value">0°</div>
-  <div id="value1">0°</div>
-</div>
-
-<script>
-let lastAlpha = null;
-let totalRotation = 0;
-let serverUrl = null;
-let trackingStarted = false;
-let alphaFiltered = null;
-
-function sendToServer(rotation) {
-    if(!serverUrl) return;
-    fetch(serverUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rotation })
-    }).catch(err => console.error('POST error:', err));
-}
-
-function startTracking() {
-    serverUrl = document.getElementById('serverUrl').value.trim();
-    if(!serverUrl) { alert('กรุณากรอก URL ของ server'); return; }
-    trackingStarted = true;
-    lastAlpha = null;
-    totalRotation = 0;
-    alphaFiltered = null;
-    alert(`เริ่มส่งค่าไป ${serverUrl}`);
-}
-
-window.addEventListener('deviceorientation', (event) => {
-    if(!trackingStarted) return;
-    let alpha = event.alpha;
-document.getElementById('value1').textContent = alpha.toFixed(1) + '°';
-    // low-pass smoothing
-    if(alphaFiltered === null) alphaFiltered = alpha;
-    alphaFiltered += 0.2 * (alpha - alphaFiltered);
-
-    if(lastAlpha !== null) {
-        let delta = alphaFiltered - lastAlpha;
-
-        // จัดการ jump ข้าม 0/360
-        if(delta > 180) delta -= 360;
-        if(delta < -180) delta += 360;
-
-        // ถ้า delta ใหญ่เกิน (>100°) แก้เป็น incremental 1°
-     
-
-        totalRotation += delta; // ไม่จำกัด max/min
-
-      if (totalRotation > 1800) totalRotation = 1800;
-        if (totalRotation < -1800) totalRotation = -1800;
-    }
-
-    lastAlpha = alphaFiltered;
-
-    document.getElementById('value').textContent = totalRotation.toFixed(1) + '°';
-    document.getElementById('circle').style.transform = `rotate(${totalRotation}deg)`;
-
-    sendToServer(totalRotation);
-});
-
-// iOS 13+ permission
-if (typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-        .then(permissionState => { if(permissionState !== 'granted') alert('ต้องอนุญาตให้ใช้ Gyroscope'); })
-        .catch(console.error);
-}
-</script>
+	<p>This Example just print's the raw accelerometer and gyro data. Will return null if no device information is found.</p>
+	<p>gyro.getFeatures: <span id="features"></span></p>
+	<span id="example"></span>
+	<script src="js/gyro.js"></script>
+	<script>
+		gyro.startTracking(function(o) {
+			var b = document.getElementById('example'),
+					f = document.getElementById('features');
+			f.innerHTML = gyro.getFeatures();
+			b.innerHTML = "<p> x = " + o.x + "</p>" +
+										"<p> y = " + o.y + "</p>" +
+										"<p> z = " + o.z + "</p>" +
+										"<p> alpha = " + o.alpha + "</p>" +
+										"<p> beta = " + o.beta + "</p>" +
+										"<p> gamma = " + o.gamma + "</p>";
+		});
+	</script>
 </body>
 </html>
