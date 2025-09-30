@@ -1,60 +1,339 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gyro Roll Tracker</title>
-<style>
-  body { font-family: sans-serif; text-align: center; padding: 50px; background: #FFF7ED; color: #9C4221; }
-  #roll { font-size: 3em; margin: 20px 0; }
-  #circle { width: 150px; height: 150px; border-radius: 50%; border: 4px solid #9C4221; margin: 0 auto; transform-origin: center center; transition: transform 0.05s linear; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscope Roll Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 1.1rem;
+        }
+        
+        .roll-display {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .roll-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .roll-label {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            margin: 0 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #resetBtn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+        }
+        
+        .instructions {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+        
+        .gyro-indicator {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .gyro-needle {
+            position: absolute;
+            width: 4px;
+            height: 70px;
+            background-color: #ff5252;
+            top: 10px;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 10px #ff5252;
+        }
+        
+        .gyro-center {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .gyro-markings {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .marking {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .roll-value {
+                font-size: 2.8rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                margin: 5px 0;
+            }
+        }
+    </style>
 </head>
 <body>
-<h1>Gyro Roll Tracker</h1>
-<div id="roll">0°</div>
-<div id="circle"></div>
+    <div class="container">
+        <h1>Gyroscope Roll Tracker</h1>
+        
+        <div class="status" id="status">
+            กำลังรอการอนุญาตใช้งาน Gyroscope...
+        </div>
+        
+        <div class="gyro-indicator">
+            <div class="gyro-markings" id="markings"></div>
+            <div class="gyro-needle" id="needle"></div>
+            <div class="gyro-center"></div>
+        </div>
+        
+        <div class="roll-display">
+            <div class="roll-label">ค่าสะสม Roll</div>
+            <div class="roll-value" id="rollValue">0.00°</div>
+            <div class="roll-label" id="currentRoll">ค่าปัจจุบัน: 0.00°</div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">เริ่มการวัด</button>
+            <button id="resetBtn">รีเซ็ตค่า</button>
+        </div>
+        
+        <div class="instructions">
+            <p>กดปุ่ม "เริ่มการวัด" เพื่ออนุญาตให้เว็บไซต์เข้าถึง Gyroscope ของอุปกรณ์ของคุณ</p>
+            <p>หมุนอุปกรณ์เพื่อดูการเปลี่ยนแปลงของค่า Roll และค่าสะสม</p>
+        </div>
+    </div>
 
-<script>
-let lastGamma = null;
-let totalRoll = 0;
-
-function handleOrientation(event) {
-    let gamma = event.gamma; // -90 ถึง +90
-
-    if(lastGamma !== null){
-        let diff = gamma - lastGamma;
-
-        // detect cross over boundary
-        if(diff > 180) diff -= 360;
-        if(diff < -180) diff += 360;
-
-        // สำหรับ -90 ถึง 90 ต้อง detect sudden flip
-        if(diff > 90) diff = diff - 180;
-        if(diff < -90) diff = diff + 180;
-
-        totalRoll += diff;
-    }
-
-    lastGamma = gamma;
-
-    document.getElementById('roll').innerText = totalRoll.toFixed(1) + '°';
-    document.getElementById('circle').style.transform = `rotate(${totalRoll}deg)`;
-}
-
-// iOS permission
-if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-    .then(permissionState => {
-        if (permissionState === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-        } else {
-            alert("ไม่ได้รับอนุญาตอ่าน Gyro");
+    <script>
+        // ตัวแปรเก็บค่า
+        let totalRoll = 0;
+        let isGyroActive = false;
+        let sensor = null;
+        
+        // อ้างอิง DOM elements
+        const statusElement = document.getElementById('status');
+        const rollValueElement = document.getElementById('rollValue');
+        const currentRollElement = document.getElementById('currentRoll');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const needleElement = document.getElementById('needle');
+        const markingsElement = document.getElementById('markings');
+        
+        // สร้างเครื่องหมายบนหน้าปัด
+        function createMarkings() {
+            for (let i = 0; i < 36; i++) {
+                const marking = document.createElement('div');
+                marking.className = 'marking';
+                marking.style.transform = `translateX(-50%) rotate(${i * 10}deg)`;
+                markingsElement.appendChild(marking);
+            }
         }
-    }).catch(console.error);
-} else {
-    window.addEventListener('deviceorientation', handleOrientation);
-}
-</script>
+        
+        // เริ่มต้นใช้งาน Gyroscope
+        function startGyro() {
+            if (typeof Gyroscope === "undefined") {
+                statusElement.textContent = "อุปกรณ์ของคุณไม่รองรับ Gyroscope API";
+                return;
+            }
+            
+            try {
+                sensor = new Gyroscope({ frequency: 60 });
+                
+                sensor.addEventListener('reading', () => {
+                    // คำนวณมุมจากค่า x, y, z
+                    const x = sensor.x;
+                    const y = sensor.y;
+                    const z = sensor.z;
+                    
+                    // คำนวณมุม Roll จากค่า accelerometer
+                    const roll = Math.atan2(y, z) * (180 / Math.PI);
+                    
+                    // อัพเดทค่าสะสม
+                    totalRoll += Math.abs(roll);
+                    
+                    // แสดงผล
+                    rollValueElement.textContent = totalRoll.toFixed(2) + '°';
+                    currentRollElement.textContent = `ค่าปัจจุบัน: ${roll.toFixed(2)}°`;
+                    
+                    // อัพเดทเข็มบนหน้าปัด
+                    needleElement.style.transform = `translateX(-50%) rotate(${roll}deg)`;
+                    
+                    statusElement.textContent = "กำลังวัดค่า Gyroscope...";
+                    statusElement.classList.add('pulse');
+                });
+                
+                sensor.addEventListener('error', event => {
+                    statusElement.textContent = "เกิดข้อผิดพลาด: " + event.error.message;
+                    statusElement.classList.remove('pulse');
+                });
+                
+                sensor.start();
+                isGyroActive = true;
+                startBtn.textContent = "หยุดการวัด";
+                statusElement.textContent = "กำลังวัดค่า Gyroscope...";
+                
+            } catch (error) {
+                statusElement.textContent = "ไม่สามารถเริ่มต้น Gyroscope ได้: " + error.message;
+            }
+        }
+        
+        // หยุดการวัด
+        function stopGyro() {
+            if (sensor) {
+                sensor.stop();
+                isGyroActive = false;
+                startBtn.textContent = "เริ่มการวัด";
+                statusElement.textContent = "หยุดการวัดแล้ว";
+                statusElement.classList.remove('pulse');
+            }
+        }
+        
+        // รีเซ็ตค่า
+        function resetValues() {
+            totalRoll = 0;
+            rollValueElement.textContent = "0.00°";
+            currentRollElement.textContent = "ค่าปัจจุบัน: 0.00°";
+            needleElement.style.transform = 'translateX(-50%) rotate(0deg)';
+        }
+        
+        // เพิ่ม Event Listeners
+        startBtn.addEventListener('click', () => {
+            if (isGyroActive) {
+                stopGyro();
+            } else {
+                startGyro();
+            }
+        });
+        
+        resetBtn.addEventListener('click', resetValues);
+        
+        // เริ่มต้นสร้างเครื่องหมายบนหน้าปัด
+        createMarkings();
+        
+        // ตรวจสอบการรองรับ Gyroscope
+        if (typeof Gyroscope === "undefined") {
+            statusElement.textContent = "เบราว์เซอร์นี้ไม่รองรับ Gyroscope API";
+            startBtn.disabled = true;
+        }
+    </script>
 </body>
 </html>
