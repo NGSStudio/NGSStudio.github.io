@@ -1,90 +1,103 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>Gyro – อ่านทุกด้าน</title>
-<style>
-  body { font-family: sans-serif; padding: 16px; background: #fff7ed; }
-  h1 { color: #ff7a18; font-size: 1.2rem; }
-  .card { background: #fff1e6; border-radius: 12px; padding: 12px; margin-top: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-  .big { font-size: 1.5rem; font-weight: bold; }
-  .muted { color: #555; font-size: 0.9rem; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gyro to vJoy</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    #value {
+      font-size: 2em;
+      margin-top: 20px;
+    }
+    #circle {
+      width: 200px;
+      height: 200px;
+      border: 5px solid #333;
+      border-radius: 50%;
+      margin: 40px auto;
+      transform: rotate(0deg);
+      transition: transform 0.05s linear;
+    }
+    input {
+      padding: 5px;
+      margin: 5px;
+      width: 250px;
+    }
+    button {
+      padding: 5px 10px;
+      margin: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Gyro Orientation</h1>
-  <div class="card">
-    <div>Alpha (Z): <span class="big" id="rawAlpha">—</span>°</div>
-    <div>Beta (X): <span class="big" id="rawBeta">—</span>°</div>
-    <div>Gamma (Y): <span class="big" id="rawGamma">—</span>°</div>
-    <div class="muted">Accumulated → <span id="accum">—</span></div>
-  </div>
+  <h1>Gyroscope Tracker</h1>
+  <label>Server URL:</label>
+  <input type="text" id="serverUrl" placeholder="https://abcd1234.ngrok-free.app/gyro"><br>
+  <button onclick="startTracking()">เริ่มส่งค่า</button>
 
-<script>
-(() => {
-  let prev = {alpha:null,beta:null,gamma:null};
-  let accum = {alpha:0,beta:0,gamma:0};
-  let smoothed = {alpha:null,beta:null,gamma:null};
-  let smooth = 0.15;
+  <div id="circle"></div>
+  <div id="value">0°</div>
 
-  const rawAlpha=document.getElementById('rawAlpha');
-  const rawBeta=document.getElementById('rawBeta');
-  const rawGamma=document.getElementById('rawGamma');
-  const accumEl=document.getElementById('accum');
+  <script>
+    let lastAlpha = null;
+    let totalRotation = 0;
+    let serverUrl = null;
+    let trackingStarted = false;
 
-  function clamp180(v){
-    return ((v + 180) % 360 + 360) % 360 - 180;
-  }
-  function unwrapDelta(prev, cur){
-    if(prev===null||cur===null) return 0;
-    let d = cur - prev;
-    if(d>180) d -= 360;
-    if(d<-180) d += 360;
-    return d;
-  }
-  function lowpass(prev,cur,a){
-    if(prev===null) return cur;
-    return prev*(1-a)+cur*a;
-  }
-  // 🔧 Fix ติด 90°
-  function fixFlip(beta,gamma){
-    if(gamma>90){ gamma=180-gamma; beta=beta>0?180-beta:-180-beta; }
-    if(gamma<-90){ gamma=-180-gamma; beta=beta>0?180-beta:-180-beta; }
-    return {beta,gamma};
-  }
-
-  function handleOri(e){
-    let alpha = e.alpha!==null?clamp180(e.alpha):null;
-    let beta  = e.beta!==null?clamp180(e.beta):null;
-    let gamma = e.gamma!==null?clamp180(e.gamma):null;
-
-    if(beta!==null&&gamma!==null){
-      const fixed=fixFlip(beta,gamma);
-      beta=fixed.beta; gamma=fixed.gamma;
+    function sendToServer(rotation) {
+      if (!serverUrl) return;
+      fetch(serverUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rotation })
+      }).catch(err => console.error('POST error:', err));
     }
 
-    let dA=unwrapDelta(prev.alpha,alpha);
-    let dB=unwrapDelta(prev.beta ,beta );
-    let dG=unwrapDelta(prev.gamma,gamma);
+    function startTracking() {
+      serverUrl = document.getElementById('serverUrl').value.trim();
+      if (!serverUrl) {
+        alert('กรุณากรอก URL ของ server');
+        return;
+      }
+      trackingStarted = true;
+      alert(`เริ่มส่งค่าไป ${serverUrl}`);
+    }
 
-    accum.alpha+=dA; accum.beta+=dB; accum.gamma+=dG;
+    window.addEventListener('deviceorientation', (event) => {
+      if (!trackingStarted) return;
 
-    smoothed.alpha=lowpass(smoothed.alpha,alpha,smooth);
-    smoothed.beta =lowpass(smoothed.beta ,beta ,smooth);
-    smoothed.gamma=lowpass(smoothed.gamma,gamma,smooth);
+      let alpha = event.alpha;
+      if (lastAlpha !== null) {
+        let delta = alpha - lastAlpha;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        totalRotation += delta;
 
-    prev.alpha=alpha; prev.beta=beta; prev.gamma=gamma;
+        if (totalRotation > 1800) totalRotation = 1800;
+        if (totalRotation < -1800) totalRotation = -1800;
+      }
+      lastAlpha = alpha;
 
-    rawAlpha.textContent=alpha?.toFixed(1)??'—';
-    rawBeta.textContent =beta?.toFixed(1)??'—';
-    rawGamma.textContent=gamma?.toFixed(1)??'—';
-    accumEl.textContent=`α:${accum.alpha.toFixed(1)}° β:${accum.beta.toFixed(1)}° γ:${accum.gamma.toFixed(1)}°`;
-  }
+      document.getElementById('value').textContent = totalRotation.toFixed(1) + '°';
+      document.getElementById('circle').style.transform = `rotate(${totalRotation}deg)`;
 
-  window.addEventListener('deviceorientation',handleOri);
-})();
-</script>
+      sendToServer(totalRotation);
+    });
+
+    // iOS 13+ permission
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState !== 'granted') alert('ต้องอนุญาตให้ใช้ Gyroscope');
+        })
+        .catch(console.error);
+    }
+  </script>
 </body>
 </html>
