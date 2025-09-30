@@ -72,7 +72,7 @@
       if (!trackingStarted) return;
 
       let alpha = event.alpha;
-      document.getElementById('value').textContent = alpha.toFixed(1) + '°';
+      document.getElementById('value1').textContent = alpha.toFixed(1) + '°';
       if (lastAlpha !== null) {
         let delta = alpha - lastAlpha;
         if (delta > 180) delta -= 360;
