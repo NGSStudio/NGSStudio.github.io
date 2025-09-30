@@ -1,87 +1,54 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gyro to vJoy</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    #value {
-      font-size: 2em;
-      margin-top: 20px;
-    }
-    #circle {
-      width: 200px;
-      height: 200px;
-      border: 5px solid #333;
-      border-radius: 50%;
-      margin: 40px auto;
-      transform: rotate(0deg);
-      transition: transform 0.05s linear;
-    }
-    input {
-      padding: 5px;
-      margin: 5px;
-      width: 250px;
-    }
-    button {
-      padding: 5px 10px;
-      margin: 5px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gyroscope API Example</title>
 </head>
 <body>
-  <h1>Gyroscope Tracker</h1>
-  <label>Server URL:</label>
-  <input type="text" id="serverUrl" placeholder="https://abcd1234.ngrok-free.app/gyro"><br>
-  <button onclick="startTracking()">เริ่มส่งค่า</button>
+<h2>Gyroscope API</h2>
+<div id="output">Waiting...</div>
 
-  <div id="circle"></div>
-  <div id="value">0°</div>
+<script>
+if ('Gyroscope' in window) {
+  try {
+    let gyro = new Gyroscope({ frequency: 60 });
 
-  <script>
-    let lastAlpha = null;
-    let totalRotation = 0;
-    let serverUrl = null;
-    let gyroscope = new Gyroscope({ frequency: 60 });
-    let trackingStarted = false;
+    // มุมที่สะสมไว้ (หน่วย: rad → แปลงเป็น degree ตอนโชว์)
+    let angle = { x:0, y:0, z:0 };
+    let last = performance.now();
 
-    function sendToServer(rotation) {
-      if (!serverUrl) return;
-      fetch(serverUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rotation })
-      }).catch(err => console.error('POST error:', err));
-    }
+    gyro.addEventListener('reading', () => {
+      let now = performance.now();
+      let dt = (now - last) / 1000; // วินาที
+      last = now;
 
-    function startTracking() {
-      gyroscope.start();
-    }
-    gyroscope.addEventListener("reading", (e) => {
-      console.log(`Angular velocity along the X-axis ${gyroscope.x}`);
-      console.log(`Angular velocity along the Y-axis ${gyroscope.y}`);
-      console.log(`Angular velocity along the Z-axis ${gyroscope.z}`);
-      totalRotation += delta;
-      document.getElementById('value').textContent = totalRotation.toFixed(1) + '°';
-      sendToServer(totalRotation);
+      // integrate angular velocity (rad/s * s = rad)
+      angle.x += gyro.x * dt;
+      angle.y += gyro.y * dt;
+      angle.z += gyro.z * dt;
+
+      // แสดงผล
+      document.getElementById('output').innerHTML = `
+        Angular velocity:<br>
+        x: ${gyro.x.toFixed(3)} rad/s<br>
+        y: ${gyro.y.toFixed(3)} rad/s<br>
+        z: ${gyro.z.toFixed(3)} rad/s<br><br>
+
+        Integrated angle:<br>
+        x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
+        y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
+        z: ${(angle.z*180/Math.PI).toFixed(1)}°
+      `;
     });
 
-
-
-    // iOS 13+ permission
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission()
-        .then(permissionState => {
-          if (permissionState !== 'granted') alert('ต้องอนุญาตให้ใช้ Gyroscope');
-        })
-        .catch(console.error);
-    }
-  </script>
+    gyro.start();
+  } catch (err) {
+    document.getElementById('output').textContent = "Gyroscope error: " + err;
+  }
+} else {
+  document.getElementById('output').textContent = "Gyroscope API not supported in this browser.";
+}
+</script>
 </body>
 </html>
