@@ -47,6 +47,7 @@
     let lastAlpha = null;
     let totalRotation = 0;
     let serverUrl = null;
+    let gyroscope = new Gyroscope({ frequency: 60 });
     let trackingStarted = false;
 
     function sendToServer(rotation) {
@@ -59,14 +60,14 @@
     }
 
     function startTracking() {
-      serverUrl = document.getElementById('serverUrl').value.trim();
-      if (!serverUrl) {
-        alert('กรุณากรอก URL ของ server');
-        return;
-      }
-      trackingStarted = true;
-      alert(`เริ่มส่งค่าไป ${serverUrl}`);
+      gyroscope.start();
     }
+    gyroscope.addEventListener("reading", (e) => {
+      console.log(`Angular velocity along the X-axis ${gyroscope.x}`);
+      console.log(`Angular velocity along the Y-axis ${gyroscope.y}`);
+      console.log(`Angular velocity along the Z-axis ${gyroscope.z}`);
+      document.getElementById('value').textContent = gyroscope.y.toFixed(1) + '°';
+    });
 
     window.addEventListener('deviceorientation', (event) => {
       if (!trackingStarted) return;
