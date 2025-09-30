@@ -66,7 +66,7 @@ if ('Gyroscope' in window) {
         z: ${(angle.z*180/Math.PI).toFixed(1)}°
       `;
       if (trackingStarted) {
-        sendToServer(z);
+        sendToServer((angle.z*180/Math.PI).toFixed(1));
       }
     });
 
