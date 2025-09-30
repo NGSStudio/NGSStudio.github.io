@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gyroscope Roll Tracker</title>
+    <title>Gyroscope Roll Tracker (Stable)</title>
     <style>
         * {
             margin: 0;
@@ -159,6 +159,34 @@
             transform: translateX(-50%);
         }
         
+        .settings {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .setting-item {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .setting-label {
+            font-size: 0.9rem;
+        }
+        
+        .setting-value {
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -194,7 +222,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Gyroscope Roll Tracker</h1>
+        <h1>Gyroscope Roll Tracker (Stable)</h1>
         
         <div class="status" id="status">
             กำลังรอการอนุญาตใช้งาน Gyroscope...
@@ -212,6 +240,20 @@
             <div class="roll-label" id="currentRoll">ค่าปัจจุบัน: 0.00°</div>
         </div>
         
+        <div class="settings">
+            <div class="setting-item">
+                <div class="setting-label">ความไว (Sensitivity)</div>
+                <div class="setting-value" id="sensitivityValue">0.5</div>
+            </div>
+            <input type="range" id="sensitivity" min="0.1" max="1" step="0.1" value="0.5">
+            
+            <div class="setting-item">
+                <div class="setting-label">เกณฑ์การตรวจจับ (Threshold)</div>
+                <div class="setting-value" id="thresholdValue">2.0°</div>
+            </div>
+            <input type="range" id="threshold" min="0.5" max="5" step="0.5" value="2.0">
+        </div>
+        
         <div class="controls">
             <button id="startBtn">เริ่มการวัด</button>
             <button id="resetBtn">รีเซ็ตค่า</button>
@@ -219,6 +261,7 @@
         
         <div class="instructions">
             <p>กดปุ่ม "เริ่มการวัด" เพื่ออนุญาตให้เว็บไซต์เข้าถึง Gyroscope ของอุปกรณ์ของคุณ</p>
+            <p>ปรับความไวและเกณฑ์การตรวจจับเพื่อลดการแกว่งของค่า</p>
             <p>หมุนอุปกรณ์เพื่อดูการเปลี่ยนแปลงของค่า Roll และค่าสะสม</p>
         </div>
     </div>
@@ -228,6 +271,9 @@
         let totalRoll = 0;
         let isGyroActive = false;
         let sensor = null;
+        let lastRoll = 0;
+        let sensitivity = 0.5;
+        let threshold = 2.0;
         
         // อ้างอิง DOM elements
         const statusElement = document.getElementById('status');
@@ -237,6 +283,10 @@
         const resetBtn = document.getElementById('resetBtn');
         const needleElement = document.getElementById('needle');
         const markingsElement = document.getElementById('markings');
+        const sensitivitySlider = document.getElementById('sensitivity');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const thresholdSlider = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
         
         // สร้างเครื่องหมายบนหน้าปัด
         function createMarkings() {
@@ -246,6 +296,17 @@
                 marking.style.transform = `translateX(-50%) rotate(${i * 10}deg)`;
                 markingsElement.appendChild(marking);
             }
+        }
+        
+        // กรองค่าเพื่อลดการแกว่ง
+        function filterValue(currentValue, previousValue, sensitivity) {
+            return previousValue + (currentValue - previousValue) * sensitivity;
+        }
+        
+        // ตรวจจับการหมุนที่แท้จริง
+        function detectRealRotation(currentRoll, lastRoll, threshold) {
+            const delta = Math.abs(currentRoll - lastRoll);
+            return delta > threshold;
         }
         
         // เริ่มต้นใช้งาน Gyroscope
@@ -265,10 +326,18 @@
                     const z = sensor.z;
                     
                     // คำนวณมุม Roll จากค่า accelerometer
-                    const roll = Math.atan2(y, z) * (180 / Math.PI);
+                    let roll = Math.atan2(y, z) * (180 / Math.PI);
                     
-                    // อัพเดทค่าสะสม
-                    totalRoll += Math.abs(roll);
+                    // กรองค่าเพื่อลดการแกว่ง
+                    roll = filterValue(roll, lastRoll, sensitivity);
+                    
+                    // ตรวจจับการหมุนที่แท้จริง
+                    if (detectRealRotation(roll, lastRoll, threshold)) {
+                        // อัพเดทค่าสะสมเฉพาะเมื่อมีการหมุนจริง
+                        totalRoll += Math.abs(roll - lastRoll);
+                    }
+                    
+                    lastRoll = roll;
                     
                     // แสดงผล
                     rollValueElement.textContent = totalRoll.toFixed(2) + '°';
@@ -310,9 +379,22 @@
         // รีเซ็ตค่า
         function resetValues() {
             totalRoll = 0;
+            lastRoll = 0;
             rollValueElement.textContent = "0.00°";
             currentRollElement.textContent = "ค่าปัจจุบัน: 0.00°";
             needleElement.style.transform = 'translateX(-50%) rotate(0deg)';
+        }
+        
+        // อัพเดทค่าความไว
+        function updateSensitivity() {
+            sensitivity = parseFloat(sensitivitySlider.value);
+            sensitivityValue.textContent = sensitivity;
+        }
+        
+        // อัพเดทค่าเกณฑ์
+        function updateThreshold() {
+            threshold = parseFloat(thresholdSlider.value);
+            thresholdValue.textContent = threshold + '°';
         }
         
         // เพิ่ม Event Listeners
@@ -325,6 +407,8 @@
         });
         
         resetBtn.addEventListener('click', resetValues);
+        sensitivitySlider.addEventListener('input', updateSensitivity);
+        thresholdSlider.addEventListener('input', updateThreshold);
         
         // เริ่มต้นสร้างเครื่องหมายบนหน้าปัด
         createMarkings();
