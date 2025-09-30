@@ -51,11 +51,25 @@ function startTracking() {
 window.addEventListener('deviceorientation', (event) => {
     if(!trackingStarted) return;
     let alpha = event.alpha;
+
     if (lastAlpha !== null) {
         let delta = alpha - lastAlpha;
+
+        // ปรับ jump ข้าม 0/360
         if (delta > 180) delta -= 360;
         if (delta < -180) delta += 360;
+
+        // กัน jitter ถ้าเล็กมากๆไม่ต้องนับ
+        if (Math.abs(delta) < 0.5) {
+            delta = 0;
+        }
+
+        // smoothing ค่อยๆ เฉลี่ย
+        delta = delta * 0.7 + (totalRotation * 0.0); 
+
         totalRotation += delta;
+
+        // จำกัดขอบเขต
         if(totalRotation > 1800) totalRotation = 1800;
         if(totalRotation < -1800) totalRotation = -1800;
     }
@@ -77,5 +91,6 @@ if (typeof DeviceOrientationEvent !== 'undefined' &&
         .catch(console.error);
 }
 </script>
+
 </body>
 </html>
