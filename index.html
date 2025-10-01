@@ -39,34 +39,50 @@ if ('Gyroscope' in window) {
   try {
     let gyro = new Gyroscope({ frequency: 60 });
 
-    // มุมที่สะสมไว้ (หน่วย: rad → แปลงเป็น degree ตอนโชว์)
+    // มุมสะสม
     let angle = { x:0, y:0, z:0 };
     let last = performance.now();
 
+    // smoothing ค่า Z
+    let smoothZ = 0;
+    const alpha = 0.2; // ปรับ smoothing (0.1 = เนียนมาก, 0.3 = เร็วขึ้น)
+
+    // ตัวแปรสำหรับ UI update
+    let lastUIUpdate = 0;
+
     gyro.addEventListener('reading', () => {
       let now = performance.now();
-      let dt = (now - last) / 1000; // วินาที
+      let dt = (now - last) / 1000;
       last = now;
 
-      // integrate angular velocity (rad/s * s = rad)
+      // integrate
       angle.x += gyro.x * dt;
       angle.y += gyro.y * dt;
       angle.z += gyro.z * dt;
 
-      // แสดงผล
-      document.getElementById('output').innerHTML = `
-        Angular velocity:<br>
-        x: ${gyro.x.toFixed(3)} rad/s<br>
-        y: ${gyro.y.toFixed(3)} rad/s<br>
-        z: ${gyro.z.toFixed(3)} rad/s<br><br>
+      // smoothing Z
+      let zDeg = angle.z * 180 / Math.PI;
+      smoothZ = smoothZ + alpha * (zDeg - smoothZ);
 
-        Integrated angle:<br>
-        x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
-        y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
-        z: ${(angle.z*180/Math.PI).toFixed(1)}°
-      `;
+      // ส่งค่าไปเซิร์ฟเวอร์ "ทุกครั้ง" ที่ได้ค่า (เสถียร + เร็ว)
       if (trackingStarted) {
-        sendToServer((angle.z*180/Math.PI).toFixed(1));
+        sendToServer(smoothZ.toFixed(1));
+      }
+
+      // UI update แค่ทุก 100ms (ช้าลงเพื่อไม่กระตุก)
+      if (now - lastUIUpdate > 100) {
+        document.getElementById('output').innerHTML = `
+          Angular velocity:<br>
+          x: ${gyro.x.toFixed(3)} rad/s<br>
+          y: ${gyro.y.toFixed(3)} rad/s<br>
+          z: ${gyro.z.toFixed(3)} rad/s<br><br>
+
+          Integrated angle:<br>
+          x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
+          y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
+          z: ${smoothZ.toFixed(1)}°
+        `;
+        lastUIUpdate = now;
       }
     });
 
