@@ -8,8 +8,8 @@
 <body>
 <h2>Gyroscope API</h2>
 <input type="text" id="serverUrl" placeholder="http://192.168.1.10:3000/data">
-  <br>
-  <button onclick="startTracking()">เริ่มส่งค่า</button>
+<br>
+<button onclick="startTracking()">เริ่มส่งค่า</button>
 <div id="output">Waiting...</div>
 
 <script>
@@ -43,9 +43,9 @@ if ('Gyroscope' in window) {
     let angle = { x:0, y:0, z:0 };
     let last = performance.now();
 
-    // smoothing ค่า Z
-    let smoothZ = 0;
-    const alpha = 0.2; // ปรับ smoothing (0.1 = เนียนมาก, 0.3 = เร็วขึ้น)
+    // buffer สำหรับ Moving Average
+    let buffer = [];
+    const bufferSize = 10; // ค่าเฉลี่ยจาก 10 ค่า (ยิ่งมากยิ่งนิ่ง แต่หน่วงขึ้นเล็กน้อย)
 
     // ตัวแปรสำหรับ UI update
     let lastUIUpdate = 0;
@@ -60,16 +60,22 @@ if ('Gyroscope' in window) {
       angle.y += gyro.y * dt;
       angle.z += gyro.z * dt;
 
-      // smoothing Z
+      // คำนวณองศา
       let zDeg = angle.z * 180 / Math.PI;
-      smoothZ = smoothZ + alpha * (zDeg - smoothZ);
 
-      // ส่งค่าไปเซิร์ฟเวอร์ "ทุกครั้ง" ที่ได้ค่า (เสถียร + เร็ว)
+      // เก็บค่าใน buffer
+      buffer.push(zDeg);
+      if (buffer.length > bufferSize) buffer.shift();
+
+      // ทำ Moving Average
+      let avgZ = buffer.reduce((a,b) => a+b, 0) / buffer.length;
+
+      // ส่งไปเซิร์ฟเวอร์ทันที (เสถียรกว่าใช้ค่าเดียว)
       if (trackingStarted) {
-        sendToServer(smoothZ.toFixed(1));
+        sendToServer(avgZ.toFixed(1));
       }
 
-      // UI update แค่ทุก 100ms (ช้าลงเพื่อไม่กระตุก)
+      // UI update ทุก 100ms
       if (now - lastUIUpdate > 100) {
         document.getElementById('output').innerHTML = `
           Angular velocity:<br>
@@ -80,7 +86,7 @@ if ('Gyroscope' in window) {
           Integrated angle:<br>
           x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
           y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
-          z: ${smoothZ.toFixed(1)}°
+          z: ${avgZ.toFixed(1)}°
         `;
         lastUIUpdate = now;
       }
