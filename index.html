@@ -8,8 +8,8 @@
 <body>
 <h2>Gyroscope API</h2>
 <input type="text" id="serverUrl" placeholder="http://192.168.1.10:3000/data">
-<br>
-<button onclick="startTracking()">เริ่มส่งค่า</button>
+  <br>
+  <button onclick="startTracking()">เริ่มส่งค่า</button>
 <div id="output">Waiting...</div>
 
 <script>
@@ -37,59 +37,36 @@ function startTracking() {
 
 if ('Gyroscope' in window) {
   try {
-    let gyro = new Gyroscope({ frequency: 60 });
+    let gyro = new Gyroscope({ frequency: 250 });
 
+    // มุมที่สะสมไว้ (หน่วย: rad → แปลงเป็น degree ตอนโชว์)
     let angle = { x:0, y:0, z:0 };
     let last = performance.now();
 
-    // smoothing state
-    let smoothZ = 0;
-
-    // คุมความเร็วในการเปลี่ยนค่า (deg ต่อหนึ่ง sample)
-    const maxStep = 1.5; // ถ้ากระโดดมากกว่านี้จะค่อยๆ ไล่ตาม
-
-    let lastUIUpdate = 0;
-
     gyro.addEventListener('reading', () => {
       let now = performance.now();
-      let dt = (now - last) / 1000;
+      let dt = (now - last) / 1000; // วินาที
       last = now;
 
-      // integrate
+      // integrate angular velocity (rad/s * s = rad)
       angle.x += gyro.x * dt;
       angle.y += gyro.y * dt;
       angle.z += gyro.z * dt;
 
-      // คำนวณองศา
-      let zDeg = angle.z * 180 / Math.PI;
+      // แสดงผล
+      // document.getElementById('output').innerHTML = `
+      //   Angular velocity:<br>
+      //   x: ${gyro.x.toFixed(3)} rad/s<br>
+      //   y: ${gyro.y.toFixed(3)} rad/s<br>
+      //   z: ${gyro.z.toFixed(3)} rad/s<br><br>
 
-      // คุมไม่ให้กระโดดแรง (delta clamp)
-      let delta = zDeg - smoothZ;
-      if (Math.abs(delta) > maxStep) {
-        smoothZ += Math.sign(delta) * maxStep;
-      } else {
-        smoothZ = zDeg;
-      }
-
-      // ส่งค่าไปเซิร์ฟเวอร์
+      //   Integrated angle:<br>
+      //   x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
+      //   y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
+      //   z: ${(angle.z*180/Math.PI).toFixed(1)}°
+      // `;
       if (trackingStarted) {
-        sendToServer(smoothZ.toFixed(1));
-      }
-
-      // อัปเดต UI ทุก 100ms
-      if (now - lastUIUpdate > 100) {
-        document.getElementById('output').innerHTML = `
-          Angular velocity:<br>
-          x: ${gyro.x.toFixed(3)} rad/s<br>
-          y: ${gyro.y.toFixed(3)} rad/s<br>
-          z: ${gyro.z.toFixed(3)} rad/s<br><br>
-
-          Integrated angle:<br>
-          x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
-          y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
-          z: ${smoothZ.toFixed(1)}°
-        `;
-        lastUIUpdate = now;
+        sendToServer((angle.z*180/Math.PI).toFixed(1));
       }
     });
 
