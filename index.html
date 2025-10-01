@@ -15,6 +15,7 @@
 <script>
 let serverUrl = "";
 let trackingStarted = false;
+let latestZ = 0; // เก็บค่า z ล่าสุด
 
 function sendToServer(zValue) {
   if (!serverUrl) return;
@@ -35,42 +36,36 @@ function startTracking() {
   alert(`เริ่มส่งค่าแกน Z ไปที่ ${serverUrl}`);
 }
 
+// Gyroscope
 if ('Gyroscope' in window) {
   try {
     let gyro = new Gyroscope({ frequency: 250 });
 
-    // มุมที่สะสมไว้ (หน่วย: rad → แปลงเป็น degree ตอนโชว์)
     let angle = { x:0, y:0, z:0 };
     let last = performance.now();
 
     gyro.addEventListener('reading', () => {
       let now = performance.now();
-      let dt = (now - last) / 1000; // วินาที
+      let dt = (now - last) / 1000;
       last = now;
 
-      // integrate angular velocity (rad/s * s = rad)
       angle.x += gyro.x * dt;
       angle.y += gyro.y * dt;
       angle.z += gyro.z * dt;
 
-      // แสดงผล
-      // document.getElementById('output').innerHTML = `
-      //   Angular velocity:<br>
-      //   x: ${gyro.x.toFixed(3)} rad/s<br>
-      //   y: ${gyro.y.toFixed(3)} rad/s<br>
-      //   z: ${gyro.z.toFixed(3)} rad/s<br><br>
-
-      //   Integrated angle:<br>
-      //   x: ${(angle.x*180/Math.PI).toFixed(1)}°<br>
-      //   y: ${(angle.y*180/Math.PI).toFixed(1)}°<br>
-      //   z: ${(angle.z*180/Math.PI).toFixed(1)}°
-      // `;
-      if (trackingStarted) {
-        sendToServer((angle.z*180/Math.PI).toFixed(1));
-      }
+      latestZ = (angle.z*180/Math.PI).toFixed(1); // เก็บค่า z ล่าสุด
     });
 
     gyro.start();
+
+    // ส่งค่า 10 ครั้งต่อวิ (ทุก 100ms)
+    setInterval(() => {
+      if (trackingStarted) {
+        sendToServer(latestZ);
+        document.getElementById('output').textContent = `ส่งค่า Z: ${latestZ}°`;
+      }
+    }, 100);
+
   } catch (err) {
     document.getElementById('output').textContent = "Gyroscope error: " + err;
   }
